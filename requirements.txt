@@ -1,0 +1,5 @@
+# Uygulamanin calismasi icin ek bir paket gerekmez:
+# arayuz tkinter (Python ile birlikte gelir), tiklama ise Windows API (ctypes) ile yapilir.
+#
+# Asagidaki paket yalnizca .exe olusturmak icindir:
+pyinstaller>=6.0
