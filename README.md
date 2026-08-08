@@ -21,6 +21,25 @@ herhangi bir pencere) açıkken, seçtiğin bölgeye tıklamaları gönderir.
 
 Tıklamalar Windows'un kendi `SendInput` API'si ile gönderilir; ek bir kütüphane gerekmez.
 
+## Programı nasıl indiririm?
+
+> **Dikkat:** GitHub'daki yeşil **"Code → Download ZIP"** düğmesi programı **vermez**;
+> o sadece kaynak kodudur ve içinden `build.bat` / `run.bat` çıkar. Windows dosya
+> uzantılarını gizlediği için bunlar sana `build` ve `run` olarak görünür ve
+> Python kurulu değilse çift tıklayınca hiçbir şey olmaz.
+
+Çalışan programı (`OtomatikTiklayici.exe`) almanın yolu:
+
+1. Depoda üstteki **Actions** sekmesine gir (GitHub hesabınla giriş yapmış olmalısın).
+2. Soldan **"Windows exe olustur"** iş akışını, sonra en üstteki çalışmayı seç.
+3. Sayfayı en alta kaydır → **Artifacts** kutusundaki **`OtomatikTiklayici`** bağlantısına tıkla.
+4. İnen `OtomatikTiklayici.zip` dosyasına sağ tıkla → **Tümünü ayıkla** → içinden
+   **`OtomatikTiklayici.exe`** çıkar, çift tıkla.
+
+Windows "Bilinmeyen yayımcı" uyarısı verirse **Ek bilgi → Yine de çalıştır** de.
+
+Python kurmak istemiyorsan bu tek dosya yeterlidir; başka hiçbir şey gerekmez.
+
 ## Kurulum ve çalıştırma
 
 ### Seçenek 1 — Hazır .exe oluştur (önerilen)

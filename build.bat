@@ -6,19 +6,24 @@ REM  Sonuc: dist\OtomatikTiklayici.exe
 REM ---------------------------------------------------------------
 
 setlocal
+cd /d "%~dp0"
+title Otomatik Tiklayici - derleme
 
 echo.
 echo [1/3] Python kontrol ediliyor...
-python --version >nul 2>&1
-if errorlevel 1 (
+set "PY="
+python -c "import sys" >nul 2>&1 && set "PY=python"
+if not defined PY py -3 -c "import sys" >nul 2>&1 && set "PY=py -3"
+if not defined PY (
     echo HATA: Python bulunamadi. https://www.python.org/downloads/ adresinden
     echo Python 3.10+ kurun ve kurulumda "Add python.exe to PATH" secenegini isaretleyin.
+    echo Kurulum sonrasi bu pencereyi kapatip build.bat dosyasini yeniden calistirin.
     pause
     exit /b 1
 )
 
 echo [2/3] PyInstaller kuruluyor / guncelleniyor...
-python -m pip install --upgrade pyinstaller
+%PY% -m pip install --upgrade pyinstaller
 if errorlevel 1 (
     echo HATA: PyInstaller kurulamadi.
     pause
@@ -26,7 +31,7 @@ if errorlevel 1 (
 )
 
 echo [3/3] Uygulama paketleniyor...
-python -m PyInstaller --noconfirm --clean OtomatikTiklayici.spec
+%PY% -m PyInstaller --noconfirm --clean OtomatikTiklayici.spec
 if errorlevel 1 (
     echo HATA: Paketleme basarisiz oldu.
     pause
