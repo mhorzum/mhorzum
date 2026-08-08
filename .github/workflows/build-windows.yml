@@ -10,6 +10,9 @@ on:
       - ".github/workflows/build-windows.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -34,3 +37,21 @@ jobs:
         with:
           name: OtomatikTiklayici
           path: dist/OtomatikTiklayici.exe
+
+      # Son derlemeyi "latest" etiketli surum olarak yayimlar; boylece .exe
+      # GitHub'a giris yapmadan tek tikla indirilebilir ve suresi dolmaz.
+      - name: Son surumu guncelle
+        if: >
+          github.ref_type == 'branch' &&
+          (github.ref_name == github.event.repository.default_branch ||
+           startsWith(github.ref_name, 'claude/'))
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag
+          if ($LASTEXITCODE -ne 0) { Write-Host "Onceki 'latest' surumu yok, yenisi olusturulacak." }
+          gh release create latest "dist/OtomatikTiklayici.exe" `
+            --target $env:GITHUB_SHA `
+            --title "Otomatik Tiklayici - son surum" `
+            --notes-file ".github/release-notes.md" `
+            --latest

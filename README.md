@@ -28,7 +28,15 @@ Tıklamalar Windows'un kendi `SendInput` API'si ile gönderilir; ek bir kütüph
 > uzantılarını gizlediği için bunlar sana `build` ve `run` olarak görünür ve
 > Python kurulu değilse çift tıklayınca hiçbir şey olmaz.
 
-Çalışan programı (`OtomatikTiklayici.exe`) almanın yolu:
+### En kolay yol: Releases
+
+Depo sayfasının sağındaki **Releases** bölümünden **"Otomatik Tıklayıcı - son sürüm"**
+sürümünü aç ve **Assets** altındaki **`OtomatikTiklayici.exe`** dosyasına tıkla.
+Giriş yapmaya gerek yok, dosyanın süresi dolmaz ve her yeni değişiklikte otomatik güncellenir.
+
+Doğrudan bağlantı: <https://github.com/mhorzum/mhorzum/releases/latest>
+
+### Alternatif: Actions artifact'ı
 
 1. Depoda üstteki **Actions** sekmesine gir (GitHub hesabınla giriş yapmış olmalısın).
 2. Soldan **"Windows exe olustur"** iş akışını, sonra en üstteki çalışmayı seç.
