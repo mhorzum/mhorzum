@@ -52,6 +52,25 @@ def job(name: str):
         lock.release()
 
 
+def backfill_running() -> bool:
+    return any(n.startswith("backfill_") and lock.locked() for n, lock in list(_locks.items()))
+
+
+# Geçmiş indirme sırası: önce izleme listeleri, sonra büyük endeksler
+INDEX_PRIORITY = {"XU030": 1, "NDX": 2, "XU100": 3, "SPX": 4}
+
+
+def backfill_order(symbols: list[dict]) -> list[dict]:
+    watched = {r["symbol_id"] for r in db.fetch_all("SELECT DISTINCT symbol_id FROM watchlist_items")}
+
+    def key(s: dict) -> tuple:
+        if s["id"] in watched:
+            return (0, s["ticker"])
+        return (min((INDEX_PRIORITY.get(i, 9) for i in s["indexes"]), default=9), s["ticker"])
+
+    return sorted(symbols, key=key)
+
+
 def _progress(name: str):
     def cb(done: int, total: int) -> None:
         progress[name] = {"done": done, "total": total}
@@ -72,6 +91,7 @@ def backfill_job(market: str | None = None, only_missing: bool = True) -> dict:
         symbols = ingest.active_symbols(market)
         if only_missing:
             symbols = [s for s in symbols if s["backfilled_at"] is None]
+        symbols = backfill_order(symbols)
         provider = get_provider()
 
         def work(s: dict) -> dict:
@@ -99,7 +119,11 @@ def update_market_job(market: str, timeframes: tuple[str, ...] = STORED_TIMEFRAM
             update_symbol_snapshots(s["id"], snap_tfs)
             return res
 
-        res = ingest.run_for_symbols(ingest.active_symbols(market), work, _progress(name))
+        symbols = ingest.active_symbols(market)
+        if backfill_running():
+            # Geçmişi henüz inmemiş semboller zaten geçmiş indirme işinde; ikinci kez indirme
+            symbols = [s for s in symbols if s["backfilled_at"] is not None]
+        res = ingest.run_for_symbols(symbols, work, _progress(name))
         fired = check_expression_alerts(market, snap_tfs)
         scans = run_after_close_scans(market) if after_close else 0
         info["message"] = f"{res['total']} sembol, {len(res['errors'])} hata, {fired} alarm, {scans} tarama"

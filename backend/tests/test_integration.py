@@ -202,3 +202,23 @@ def test_catch_up_updates_stale_market(loaded, monkeypatch):
     )
     monkeypatch.setattr(type(jobs.MARKETS["US"]), "is_open", lambda self, at=None: False)
     assert jobs.catch_up_job() == ["US"] and calls == ["US"]
+
+
+def test_backfill_order_prioritizes_watchlists_and_indexes(loaded):
+    syms = list(loaded.values())
+    wl = db.fetch_one("INSERT INTO watchlists (name) VALUES ('t') RETURNING id")
+    db.execute("INSERT INTO watchlist_items (watchlist_id, symbol_id) VALUES (%s, %s)", (wl["id"], loaded["JPM"]["id"]))
+    # JPM listede; THYAO/GARAN XU030; AAPL NDX
+    assert [s["ticker"] for s in jobs.backfill_order(syms)] == ["JPM", "GARAN", "THYAO", "AAPL"]
+
+
+def test_update_skips_unbackfilled_while_backfill_runs(loaded, provider, monkeypatch):
+    db.execute("UPDATE symbols SET backfilled_at = NULL WHERE ticker = 'THYAO'")
+    called = []
+    monkeypatch.setattr(jobs.ingest, "update_symbol", lambda s, *a, **k: called.append(s["ticker"]) or {})
+    with jobs.job("backfill_ALL"):
+        jobs.update_market_job("BIST")
+    assert called == ["GARAN"]
+    called.clear()
+    jobs.update_market_job("BIST")
+    assert sorted(called) == ["GARAN", "THYAO"]
