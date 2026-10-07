@@ -13,6 +13,7 @@ import logging
 import math
 import time
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -24,6 +25,8 @@ log = logging.getLogger(__name__)
 # TradingView endeks kodları -> uygulamadaki etiket
 BIST_INDEXES = {"XU030": "SYML:BIST;XU030", "XU100": "SYML:BIST;XU100"}
 US_INDEXES = {"SPX": "SYML:SP;SPX", "NDX": "SYML:NASDAQ;NDX"}
+
+ISTANBUL = ZoneInfo("Europe/Istanbul")
 
 QUOTE_COLUMNS = ["close", "open", "high", "low", "volume", "change", "update_mode"]
 
@@ -93,6 +96,10 @@ class TradingViewProvider:
     def history(self, exchange: str, ticker: str, timeframe: str, start: datetime) -> pd.DataFrame:
         if timeframe not in ("4h", "1d"):
             raise ValueError(timeframe)
+        # borsapy başlangıcı saat dilimsiz (İstanbul saati) bekliyor; saat dilimli
+        # tarih verilirse kendi içinde datetime.now() ile çıkarırken TypeError atıyor
+        if start.tzinfo is not None:
+            start = start.astimezone(ISTANBUL).replace(tzinfo=None)
         last_err: Exception | None = None
         for attempt in range(3):
             try:

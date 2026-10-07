@@ -1,6 +1,6 @@
 """TradingView sağlayıcısının ayrıştırma mantığı (ağ çağrıları sahte yanıtlarla)."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 import pytest
@@ -97,3 +97,49 @@ def test_history_no_data_returns_empty(tv, monkeypatch):
 
     monkeypatch.setattr(tv._tv, "get_history", boom)
     assert tv.history("BIST", "XXXX", "1d", datetime(2026, 1, 1, tzinfo=timezone.utc)).empty
+
+
+class FakeWebSocketApp:
+    """TradingView grafik WebSocket'ini taklit eder; borsapy'nin gerçek kodu çalışır."""
+
+    sent: list = []
+    candles: list = []
+
+    def __init__(self, url, on_open=None, on_message=None, on_error=None, header=None, **kw):
+        self.on_open, self.on_message = on_open, on_message
+
+    def send(self, msg):
+        FakeWebSocketApp.sent.append(msg)
+
+    def run_forever(self, *a, **k):
+        import json as _json
+
+        self.on_open(self)
+        body = _json.dumps({"m": "timescale_update", "p": ["cs", {"$prices": {"s": [
+            {"i": i, "v": v} for i, v in enumerate(FakeWebSocketApp.candles)]}}]})
+        self.on_message(self, f"~m~{len(body)}~m~{body}")
+
+    def close(self):
+        pass
+
+
+def test_history_through_real_borsapy_client(monkeypatch):
+    """borsapy'nin get_history'si saat dilimli başlangıçla çökmemeli (gerçek hata)."""
+    import websocket
+
+    monkeypatch.setattr(websocket, "WebSocketApp", FakeWebSocketApp)
+    FakeWebSocketApp.sent = []
+    now = datetime.now(timezone.utc)
+    t0 = int((now - timedelta(days=3)).timestamp())
+    FakeWebSocketApp.candles = [[t0, 10, 11, 9, 10.5, 1000], [t0 + 86400, 10.5, 12, 10, 11.5, 2000]]
+
+    p = TradingViewProvider()
+    start = now - timedelta(days=365 * 5 + 7)  # ingest'in verdiği gibi saat dilimli
+    df = p.history("NASDAQ", "AAPL", "4h", start)
+
+    assert len(df) == 2 and df["close"].tolist() == [10.5, 11.5]
+    assert str(df.index.tz) == "UTC" and int(df.index[0].timestamp()) == t0
+    resolve = next(m for m in FakeWebSocketApp.sent if "resolve_symbol" in m)
+    assert "NASDAQ:AAPL" in resolve
+    series = next(m for m in FakeWebSocketApp.sent if "create_series" in m)
+    assert '"240"' in series  # 4 saatlik periyot
