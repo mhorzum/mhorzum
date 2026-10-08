@@ -1,0 +1,45 @@
+name: borsa
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: borsa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-borsa}
+      POSTGRES_DB: borsa
+      TZ: Europe/Istanbul
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Veritabanına kendi araçlarınla (DBeaver, pgAdmin, psql) bağlanabilmen için
+    # yalnızca bu bilgisayara açık
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U borsa -d borsa"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://borsa:${POSTGRES_PASSWORD:-borsa}@db:5432/borsa
+      DATA_PROVIDER: ${DATA_PROVIDER:-tradingview}
+      HISTORY_YEARS: ${HISTORY_YEARS:-5}
+      FETCH_WORKERS: ${FETCH_WORKERS:-3}
+      LIVE_POLL_SECONDS: ${LIVE_POLL_SECONDS:-60}
+      AUTO_BOOTSTRAP: ${AUTO_BOOTSTRAP:-true}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      TV_SESSION: ${TV_SESSION:-}
+      TV_SESSION_SIGN: ${TV_SESSION_SIGN:-}
+    ports:
+      - "127.0.0.1:${APP_PORT:-8000}:8000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

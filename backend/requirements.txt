@@ -1,0 +1,9 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+psycopg[binary,pool]>=3.2
+pandas>=2.2
+numpy>=1.26
+apscheduler>=3.10,<4
+httpx>=0.27
+borsapy>=0.11
+tradingview-screener>=3.0

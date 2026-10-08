@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Borsa Terminali</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📈%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/vendor/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">📈 Borsa Terminali</div>
+
+    <div class="search">
+      <input id="symbol-search" type="text" placeholder="Sembol ara (THYAO, AAPL…)" autocomplete="off">
+      <div id="search-results" class="dropdown hidden"></div>
+    </div>
+
+    <div id="tf-buttons" class="btn-group" role="group" aria-label="Periyot"></div>
+
+    <div class="menu-wrap">
+      <button id="btn-indicators" class="btn">ƒx İndikatörler</button>
+      <div id="indicator-menu" class="dropdown hidden"></div>
+    </div>
+
+    <div class="btn-group" role="group" aria-label="Çizim">
+      <button id="tool-hline" class="btn" title="Yatay çizgi (grafiğe tıkla)">─ Yatay</button>
+      <button id="tool-trend" class="btn" title="Trend çizgisi (iki noktaya tıkla)">╱ Trend</button>
+      <button id="tool-clear" class="btn" title="Bu sembolün çizimlerini sil">🗑</button>
+    </div>
+
+    <button id="btn-alert" class="btn">⏰ Alarm</button>
+
+    <div class="spacer"></div>
+
+    <div id="status" class="status"></div>
+
+    <div class="menu-wrap">
+      <button id="btn-data" class="btn" title="Veri işlemleri">⚙ Veri</button>
+      <div id="data-menu" class="dropdown dropdown-right hidden">
+        <button data-job="sync_universe">Sembol listesini güncelle</button>
+        <button data-job="backfill">Eksik geçmişi indir</button>
+        <button data-job="update" data-market="BIST">BIST son barları çek</button>
+        <button data-job="update" data-market="US">ABD son barları çek</button>
+        <button data-job="live">Anlık fiyatları yenile</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="chart-area">
+      <div id="legend" class="legend"></div>
+      <div id="chart" class="chart"></div>
+      <div id="chart-empty" class="chart-empty hidden"></div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="panel-head">
+        <select id="wl-select" aria-label="İzleme listesi"></select>
+        <button id="wl-add-symbol" class="icon-btn" title="Grafikteki sembolü ekle">＋</button>
+        <button id="wl-new" class="icon-btn" title="Yeni liste">🗎</button>
+        <button id="wl-rename" class="icon-btn" title="Yeniden adlandır">✎</button>
+        <button id="wl-delete" class="icon-btn" title="Listeyi sil">🗑</button>
+      </div>
+      <div class="wl-header"><span>Sembol</span><span>Son</span><span>Değ%</span></div>
+      <ul id="wl-items" class="wl-items"></ul>
+    </aside>
+
+    <section class="bottom">
+      <nav class="tabs">
+        <button class="tab active" data-tab="screener">Tarayıcı</button>
+        <button class="tab" data-tab="scans">Kayıtlı Taramalar</button>
+        <button class="tab" data-tab="alerts">Alarmlar</button>
+        <button class="tab" data-tab="events">Bildirimler <span id="events-badge" class="badge hidden">0</span></button>
+        <div class="spacer"></div>
+        <button id="bottom-toggle" class="icon-btn" title="Paneli daralt/genişlet">▾</button>
+      </nav>
+
+      <div class="tab-body" id="tab-screener">
+        <div class="screener-form">
+          <div class="row">
+            <input id="scr-expr" class="expr" type="text" spellcheck="false"
+                   placeholder="ör. rsi14 < 30 ve close > sma200">
+            <select id="scr-presets" aria-label="Hazır taramalar"></select>
+          </div>
+          <div class="row">
+            <label>Periyot <select id="scr-tf"></select></label>
+            <label><input type="checkbox" id="scr-bist" checked> BIST</label>
+            <label><input type="checkbox" id="scr-us" checked> ABD</label>
+            <span class="sep"></span>
+            <span id="scr-indexes" class="chips"></span>
+            <span class="sep"></span>
+            <label>Liste <select id="scr-watchlist"><option value="">Tümü</option></select></label>
+            <label>Sırala <select id="scr-sort"></select></label>
+            <button id="scr-run" class="btn primary">Tara</button>
+            <button id="scr-save" class="btn">Tarama olarak kaydet</button>
+            <button id="scr-help" class="btn">Alanlar</button>
+          </div>
+          <div id="scr-help-box" class="help hidden"></div>
+          <div id="scr-msg" class="msg"></div>
+        </div>
+        <div class="table-wrap"><table id="scr-table" class="grid"></table></div>
+      </div>
+
+      <div class="tab-body hidden" id="tab-scans">
+        <div class="table-wrap"><table id="scans-table" class="grid"></table></div>
+      </div>
+
+      <div class="tab-body hidden" id="tab-alerts">
+        <form id="alert-form" class="alert-form">
+          <label>Tür
+            <select id="al-kind">
+              <option value="price">Fiyat seviyesi (anlık)</option>
+              <option value="expression">İfade (bar kapanışında)</option>
+            </select>
+          </label>
+          <label class="al-target">Hedef
+            <select id="al-target"></select>
+          </label>
+          <span class="al-price">
+            <label>Yön
+              <select id="al-op">
+                <option value="cross_up">Yukarı keserse</option>
+                <option value="cross_down">Aşağı keserse</option>
+              </select>
+            </label>
+            <label>Seviye <input id="al-value" type="number" step="any" required></label>
+          </span>
+          <span class="al-expr hidden">
+            <label>Periyot <select id="al-tf"></select></label>
+            <input id="al-expr" class="expr" type="text" placeholder="ör. cross_up(close, sma50)">
+          </span>
+          <label>Tekrar
+            <select id="al-mode">
+              <option value="once">Bir kez</option>
+              <option value="repeat">Her seferinde</option>
+            </select>
+          </label>
+          <input id="al-note" type="text" placeholder="Not (isteğe bağlı)">
+          <button class="btn primary" type="submit">Alarm ekle</button>
+          <span id="al-msg" class="msg"></span>
+        </form>
+        <div class="table-wrap"><table id="alerts-table" class="grid"></table></div>
+      </div>
+
+      <div class="tab-body hidden" id="tab-events">
+        <div class="row">
+          <button id="ev-notify" class="btn">Tarayıcı bildirimlerini aç</button>
+          <button id="ev-seen" class="btn">Tümünü okundu say</button>
+        </div>
+        <ul id="events-list" class="events"></ul>
+      </div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-box">
+      <h3 id="modal-title"></h3>
+      <div id="modal-body"></div>
+      <div class="modal-actions">
+        <button id="modal-cancel" class="btn">Vazgeç</button>
+        <button id="modal-ok" class="btn primary">Tamam</button>
+      </div>
+    </div>
+  </div>
+  <div id="toasts" class="toasts"></div>
+
+  <script type="module" src="/static/js/main.js"></script>
+</body>
+</html>
