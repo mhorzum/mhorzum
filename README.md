@@ -32,14 +32,17 @@ TradingView (15 dk gecikmeli, resmi olmayan API)
 
 ## Kurulum (Windows / macOS / Linux)
 
-1. [Docker Desktop](https://www.docker.com/products/docker-desktop/) kur ve çalıştır.
-2. Bu repoyu indir (`git clone` veya ZIP) ve klasörde bir terminal aç.
-3. İsteğe bağlı: `.env.example` dosyasını `.env` adıyla kopyalayıp düzenle (Telegram, şifre vb.).
-4. Başlat:
+1. [Docker Desktop](https://www.docker.com/products/docker-desktop/) ve [Git](https://git-scm.com/download/win) kur.
+2. Kodu bir klasöre indir (ör. masaüstündeki `periview`). Klasörde terminal açıp:
    ```bash
-   docker compose up -d --build
+   git clone -b claude/serene-keller-81bhk1 https://github.com/mhorzum/mhorzum.git .
    ```
+   (Klasör boş olmalı.)
+3. İsteğe bağlı: `.env.example` dosyasını `.env` adıyla kopyalayıp düzenle (Telegram, şifre vb.).
+4. Başlat: Windows'ta **`guncelle.bat`** dosyasına çift tıkla (veya `docker compose up -d --build`).
 5. Tarayıcıda **http://localhost:8000** adresini aç.
+
+**Güncelleme:** `guncelle.bat` dosyasına çift tıkla. Son sürümü GitHub'dan çeker ve uygulamayı yeniden başlatır. Veritabanı ve `.env` korunur.
 
 İlk açılışta sistem kendiliğinden:
 1. Sembol listesini indirir (yaklaşık 600 BIST + 600 ABD hissesi),
